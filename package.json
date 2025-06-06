@@ -12,10 +12,12 @@
   },
   "license": "ISC",
   "author": "Souharda Roy Barman",
-  "type": "commonjs",
+  "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
@@ -27,5 +29,8 @@
     "morgan": "^1.10.0",
     "zod": "^3.25.55",
     "zod-express-middleware": "^1.4.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
   }
 }
