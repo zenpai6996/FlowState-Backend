@@ -1,0 +1,31 @@
+{
+  "name": "flowstate-backend",
+  "version": "1.0.0",
+  "description": "project management software",
+  "homepage": "https://github.com/zenpai6996/FlowState-Backend#readme",
+  "bugs": {
+    "url": "https://github.com/zenpai6996/FlowState-Backend/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zenpai6996/FlowState-Backend.git"
+  },
+  "license": "ISC",
+  "author": "Souharda Roy Barman",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.15.1",
+    "morgan": "^1.10.0",
+    "zod": "^3.25.55",
+    "zod-express-middleware": "^1.4.0"
+  }
+}
