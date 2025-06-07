@@ -4,6 +4,7 @@ import Verification from "../models/verification.js";
 import jwt from "jsonwebtoken";
 import { sendEmail } from "../libs/send-email.js";
 import { emailValidator, rateLimiter } from "../libs/arcjet.js";
+import { validateEmailWithAbstract } from "../libs/kickbox.js";
 
 const registerUser = async (req,res) => {
   try{
@@ -11,16 +12,20 @@ const registerUser = async (req,res) => {
 
        // First validate the email specifically
      // Step 1: Validate email first
-    const emailDecision = await emailValidator.protect(req, { email });
-    console.log("Email validation decision:", emailDecision);
+    // const emailDecision = await emailValidator.protect(req, { email });
+    // console.log("Email validation decision:", emailDecision);
 
-    if (emailDecision.isDenied()) {
-      return res.status(400).json({message: "Invalid email address"});
+    // if (emailDecision.isDenied()) {
+    //   return res.status(400).json({message: "Invalid email address"});
+    // }
+
+    const isValidEmail = await validateEmailWithAbstract(email);
+    if (!isValidEmail) {
+      return res.status(400).json({ message: "Invalid or undeliverable email address" });
     }
 
     // Step 2: Apply rate limiting and other protections
     const rateLimitDecision = await rateLimiter.protect(req, { requested: 1 });
-    console.log("Rate limit decision:", rateLimitDecision);
 
     if (rateLimitDecision.isDenied()) {
       const rateLimitResult = rateLimitDecision.results.find(result => result.reason.type === 'RATE_LIMIT');
