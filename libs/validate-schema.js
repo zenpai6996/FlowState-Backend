@@ -10,6 +10,10 @@ const loginSchema = z.object({
   password: z.string().min(1,"Password is required"),
 });
 
+const verifyEmailSchema = z.object({
+  token: z.string().min(1,"Token is Required"),
+});
+
 export {
-  registerSchema,loginSchema
+  registerSchema,loginSchema,verifyEmailSchema
 };

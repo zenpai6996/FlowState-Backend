@@ -54,7 +54,7 @@ const registerUser = async (req,res) => {
     });
 
     const verificationToken = jwt.sign(
-      {userId: newUser._id,property:"email-verification"},
+      {userId: newUser._id,purpose:"email-verification"},
       process.env.JWT_SECRET,
       {expiresIn: "1h"}
     );
@@ -80,8 +80,6 @@ const registerUser = async (req,res) => {
             Verify Email Address
           </a>
         </div>
-        <p>Or copy and paste this link in your browser:</p>
-        <p style="word-break: break-all; color: #666;">${verificationLink}</p>
         <p><strong>This link will expire in 1 hour.</strong></p>
         <p>If you didn't create an account with us, please ignore this email.</p>
       </div>
@@ -112,24 +110,27 @@ const registerUser = async (req,res) => {
 
 const verifyEmail = async (req, res) => {
   try{
-    const {token} = req.query;
+    const {token} = req.body;
+    //const {token} = req.query;
 
-    if(!token){
-      return res.status(400).json({message:"Verification token is required"});
-    }
-
+    
     //verify jwt token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    if(decoded.property !== "email-verification") {
-      return res.status(400).sjon({message:"Invalid verification token"});
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    
+    if(!payload){
+      return res.status(401).json({message:"Verification token is required"});
     }
-
+    
+    const {userId,purpose} = payload;
+    
+    if(purpose !== "email-verification") {
+      return res.status(401).json({message:"Invalid verification token"});
+    }
     //Find verification record 
     const verification = await Verification.findOne({
       token,
-      userId:decoded.userId,
-      expiresAt: {$gt: new Date()}//check if not expired 
+      userId:userId,
+      // expiresAt: {$gt: new Date()}//check if not expired 
     });
 
     if(!verification){
@@ -138,16 +139,26 @@ const verifyEmail = async (req, res) => {
       });
     }
 
-    const user = await User.findByIdAndUpdate(decoded.userId,
-      {isEmailVerified:true},
-      {new:true}
-    );
+    const isTokenExpired = verification.expiresAt < new Date();
+
+    if(isTokenExpired){
+      return res.status(401).json({message:"Token Expired"});
+    }
+
+    const user = await User.findById(userId);
 
     if(!user){
       return res.status(404).json({message:"User not found"});
     }
 
-    await Verification.deleteOne({_id:verification._id});
+    if(user.isEmailVerified){
+      return res.status(400).json({message:"Email already verified"});
+    }
+
+    user.isEmailVerified = true;
+    await user.save();
+
+    await Verification.findByIdAndDelete(verification._id);
 
     res.status(200).json({
       message:"Email verified successfuly! You can now log in.",
@@ -206,7 +217,7 @@ const resendVerificationEmail = async (req, res) => {
     const emailBody = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2>Email Verification</h2>
-        <p>Hello ${user.name},</p>
+        <p>Hello ${user.name},（。＾▽＾）</p>
         <p>Please verify your email address by clicking the button below:</p>
         <div style="text-align: center; margin: 30px 0;">
           <a href="${verificationLink}" 
@@ -239,6 +250,93 @@ const resendVerificationEmail = async (req, res) => {
 
 const loginUser = async (req,res) => {
   try{
+    const {email, password} = req.body;
+
+    const user = await User.findOne({email}).select("+password");
+
+    if(!user){
+      return res.status(400).json({message:"Invalid Email or Password"})
+    }
+
+    if(!user.isEmailVerified){
+      const existingVerification = await Verification.findOne({
+        userId : user._id,
+      });
+
+      if(!existingVerification && existingVerification.expiresAt > new Date ()){
+        res.status(400).json({
+          message:"Email not verified. Please check your email for the verification link"
+        });
+      }else{
+        const verificationToken = jwt.sign(
+          {userId: user._id,purpose:"email-verification"},
+          process.env.JWT_SECRET,
+          {expiresIn:"1h"}
+        );
+        await Verification.findByIdAndDelete(existingVerification._id);
+        await Verification.create({
+          userId:user._id,
+          token:verificationToken,
+          expiresAt: new Date(Date.now() + 1 * 60 *60 *1000),
+        });
+
+        const verificationLink=`${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
+        //send email
+        const emailBody = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Email Verification</h2>
+        <p>Hello ${user.name},（。＾▽＾）</p>
+        <p>Please verify your email address by clicking the button below:</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${verificationLink}" 
+             style="background-color: #007bff; color: white; padding: 12px 30px; 
+                    text-decoration: none; border-radius: 5px; display: inline-block;">
+            Verify Email Address
+          </a>
+        </div>
+        <p>This link will expire in 1 hour.</p>
+      </div>
+    `;
+
+    const emailResult = await sendEmail(email, "Verify Your Email Address", emailBody);
+
+    if (!emailResult.success) {
+      return res.status(500).json({
+        message: "Failed to send verification email"
+      });
+    }
+
+    res.status(200).json({
+      message: "Verification email sent successfully"
+    });
+      }
+
+    }
+
+
+    const isPasswordValid = await bcrypt.compare(password , user.password);
+
+    if(!isPasswordValid){
+      return res.status(400).json({message:"Invalid email or password"});
+    }
+    
+    const token = jwt.sign(
+      {userId: user._id , purpose:"login"},
+      process.env.JWT_SECRET,
+      {expiresIn:"7d"},
+    );
+
+    user.lastLogin = new Date();
+    await user.save();
+
+    const userData = user.toObject();
+    delete userData.password;
+
+    res.status(200).json({
+      message:"Login Successfull",
+      token,
+      user:userData,
+    })
 
   }catch(error){
     console.log(error);
