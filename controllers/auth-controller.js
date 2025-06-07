@@ -3,10 +3,32 @@ import bcrypt from "bcrypt";
 import Verification from "../models/verification.js";
 import jwt from "jsonwebtoken";
 import { sendEmail } from "../libs/send-email.js";
+import { emailValidator, rateLimiter } from "../libs/arcjet.js";
 
 const registerUser = async (req,res) => {
   try{
     const {email,name,password} =req.body;
+
+       // First validate the email specifically
+     // Step 1: Validate email first
+    const emailDecision = await emailValidator.protect(req, { email });
+    console.log("Email validation decision:", emailDecision);
+
+    if (emailDecision.isDenied()) {
+      return res.status(400).json({message: "Invalid email address"});
+    }
+
+    // Step 2: Apply rate limiting and other protections
+    const rateLimitDecision = await rateLimiter.protect(req, { requested: 1 });
+    console.log("Rate limit decision:", rateLimitDecision);
+
+    if (rateLimitDecision.isDenied()) {
+      const rateLimitResult = rateLimitDecision.results.find(result => result.reason.type === 'RATE_LIMIT');
+      if (rateLimitResult && rateLimitResult.conclusion === 'DENY') {
+        return res.status(429).json({message: "Too many requests. Please try again later."});
+      }
+      return res.status(403).json({message: "Request denied"});
+    }
 
     const existingUser = await User.findOne({email})
 
@@ -39,7 +61,7 @@ const registerUser = async (req,res) => {
     });
 
     //send email
-    const verificationLink = `${process.env.FRONTEND_URL}/verify?token=${verificationToken}`;
+    const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
 
        const emailBody = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -175,7 +197,7 @@ const resendVerificationEmail = async (req, res) => {
     });
 
     // Send email
-    const verificationLink = `${process.env.FRONTEND_URL}/verify?token=${verificationToken}`;
+    const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
     const emailBody = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2>Email Verification</h2>
