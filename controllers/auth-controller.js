@@ -71,11 +71,11 @@ const registerUser = async (req,res) => {
        const emailBody = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2>Welcome to FlowState!</h2>
-        <p>Hello ${name},</p>
+        <p>Hello ${name}, （。＾▽＾）</p>
         <p>Thank you for registering with us. Please verify your email address by clicking the button below:</p>
         <div style="text-align: center; margin: 30px 0;">
           <a href="${verificationLink}" 
-             style="background-color: #007bff; color: white; padding: 12px 30px; 
+             style="background-color: #d97706; color: white; padding: 12px 30px; 
                     text-decoration: none; border-radius: 5px; display: inline-block;">
             Verify Email Address
           </a>
@@ -289,7 +289,7 @@ const loginUser = async (req,res) => {
         <p>Please verify your email address by clicking the button below:</p>
         <div style="text-align: center; margin: 30px 0;">
           <a href="${verificationLink}" 
-             style="background-color: #007bff; color: white; padding: 12px 30px; 
+             style="background-color: #d97706; color: white; padding: 12px 30px; 
                     text-decoration: none; border-radius: 5px; display: inline-block;">
             Verify Email Address
           </a>
@@ -344,4 +344,140 @@ const loginUser = async (req,res) => {
   }
 };
 
-export {registerUser,loginUser,verifyEmail,resendVerificationEmail};
+const resetPasswordRequest = async (req, res) => {
+  try {
+
+    const {email} = req.body;
+    
+    const user = await User.findOne({email});
+
+    if(!user){
+      return res.status(400).json({message:"User not found"});
+    }
+
+    if(!user.isEmailVerified){
+      return res.status(400).json({message:"Please verify your email"});
+    }
+    
+    const existingVerification = await Verification.findOne({
+      userId: user._id,
+    });
+
+    if(existingVerification && existingVerification.expiresAt > new Date()){
+      return res.status(400).json({
+        message:"Reset Password request sent successfully",
+      });
+    }
+
+    if(existingVerification && existingVerification.expiresAt < new Date()){
+      await Verification.findByIdAndDelete(existingVerification._id);
+    }
+
+    const resetPasswordToken = jwt.sign(
+      {userId:user._id,purpose:"reset-password"},
+      process.env.JWT_SECRET,
+      {expiresIn:"15m"}
+    );
+
+    await Verification.create({
+      userId: user._id,
+      token:resetPasswordToken,
+      expiresAt:new Date(Date.now() + 15 * 60 * 1000),
+    });
+
+    const resetPasswordLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetPasswordToken}`;
+    const emailBody = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Reporting From FlowState!</h2>
+        <p>Hello User, （。＾▽＾）</p>
+        <p>We got your request to change the Password. Please reset your Password by clicking the button below:</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${resetPasswordLink}" 
+             style="background-color: #d97706; color: white; padding: 12px 30px; 
+                    text-decoration: none; border-radius: 5px; display: inline-block;">
+            Verify Password
+          </a>
+        </div>
+        <p><strong>This link will expire in 15 minutes.</strong></p>
+        <p>If you didn't create an account with us, please ignore this email.</p>
+      </div>
+    `;
+
+    const emailSubject = "Reset Your Password";
+
+    //send the email
+    const emailResult = await sendEmail(email, emailSubject, emailBody);
+
+    if(!emailResult){
+      return res.status(500).json({
+        message:"Failed to send reset password email"
+      });
+    }
+
+    res.status(200).json({message:"Reset Password Email Sent"});
+  
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({message:"Internal Server Error"});
+  }
+}
+
+const verifyResetPasswordTokenAndResetPassword = async (req ,res) => {
+  try {
+    
+    const {token,newPassword , confirmPassword} = req.body;
+
+    const payload = jwt.verify(token,process.env.JWT_SECRET);
+
+    if(!payload){
+      return res.status(401).json({message:"Unauthorized"});
+    }
+
+    const {userId, purpose} = payload;
+
+    if(purpose !== "reset-password" ){
+      return res.status(401).json({message:"Unauthorized"});
+    }
+
+    const verification = await Verification.findOne({
+      userId,
+      token,
+    });
+
+    if(!verification){
+      res.status(401).json({message:"Unauthorized"});
+    }
+
+    const isTokenExpired = verification.expiresAt < new Date();
+
+    if(isTokenExpired){
+      return res.status(401).json({message:"Token Expired"});
+    }
+
+    const user = await User.findById(userId);
+
+    if(!user){
+      return res.status(401).json({message:"Unauthorized"});
+    }
+
+    if(newPassword !== confirmPassword){
+      return res.status(400).json({message:"Paswords do not match"});
+    }
+
+    const salt = await bcrypt.genSalt(10);
+
+    const hasPassword = await bcrypt.hash(newPassword,salt);
+    user.password = hasPassword;
+    await user.save();
+
+    await Verification.findByIdAndDelete(verification._id);
+
+    res.status(200).json({message:"Password reset Successfully"});
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({message:"Internal Server Error"});
+  }
+}
+
+export {registerUser,loginUser,verifyEmail,resendVerificationEmail,resetPasswordRequest,verifyResetPasswordTokenAndResetPassword};
