@@ -399,7 +399,7 @@ const resetPasswordRequest = async (req, res) => {
           </a>
         </div>
         <p><strong>This link will expire in 15 minutes.</strong></p>
-        <p>If you didn't create an account with us, please ignore this email.</p>
+        <p>If you didn't request for a password reset , please ignore this email.</p>
       </div>
     `;
 
