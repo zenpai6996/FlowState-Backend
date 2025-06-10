@@ -82,7 +82,7 @@ const getWorkspaceProjects = async (req,res) => {
     .populate("tasks","status")
     .sort({createdAt:-1});
 
-    res.status(200).json(projects,workspace);
+    res.status(200).json({projects,workspace});
 
 
   } catch (error) {
