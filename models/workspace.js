@@ -1,4 +1,4 @@
-import mongoose, { Schema ,model} from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 
 const workspaceModel = new Schema({
   name:{
@@ -43,6 +43,6 @@ projects:[{
   timestamps:true
 });
 
-const Workspace = model("Workspace",workspaceModel);
+const Workspace = mongoose.model("Workspace",workspaceModel);
 
 export default Workspace;

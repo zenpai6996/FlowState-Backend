@@ -1,4 +1,4 @@
-import {Schema} from "mongoose";
+import mongoose,  {Schema} from "mongoose";
 
 const projectSchema = new Schema({
   title:{
@@ -59,6 +59,6 @@ isArchived:{
 }  
 },{timestamps:true});
 
-const Project = model("Project",projectSchema);
+const Project = mongoose.model("Project",projectSchema);
 
 export default Project;
