@@ -6,7 +6,7 @@ import taskRoutes from "./task.js";
 
 const router = express.Router();
 
-router.use("/auth",authRoutes);
+router.use("/api-v1/auth",authRoutes);
 router.use("/workspaces", workspaceRoutes);
 router.use("/projects", projectRoutes);
 router.use("/tasks",taskRoutes);

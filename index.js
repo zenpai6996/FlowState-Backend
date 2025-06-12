@@ -17,7 +17,7 @@ mongoose.connect(process.env.MONGO_URI).then(()=> console.log("DB Connected")).c
 
 app.use(cors({
   origin: [
-    'https://flowstate-omega.vercel.app/api-v1',
+    'https://flowstate-omega.vercel.app',
   ],
   methods: ["GET", "POST", "DELETE", "PUT", "OPTIONS"], // Add OPTIONS
   allowedHeaders: ["Content-Type", "Authorization"],
