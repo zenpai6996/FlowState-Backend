@@ -37,7 +37,7 @@ app.get("/" , async(req,res) => {
 });
 
 //localhost3000/api-v1/...
-app.use("/api-v1",routes)
+app.use("/",routes)
 
 //error middleware
 app.use((err,req,res , next) => {
