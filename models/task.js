@@ -4,7 +4,7 @@ const taskSchema = new Schema({
   title:{type:String,required:true,trim:true},
   description:{type:String,trim:true},
   project:{
-    type:Schema.Types,ObjectId,
+    type:Schema.Types.ObjectId,
     ref:"Project",
     required:true,
   },
