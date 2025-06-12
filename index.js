@@ -4,6 +4,7 @@ import express from "express";
 import morgan from "morgan";
 import mongoose from "mongoose";
 import routes from "./routes/index.js";
+import { job } from "./libs/cron.js";
 
 dotenv.config();
 
@@ -15,9 +16,14 @@ mongoose.connect(process.env.MONGO_URI).then(()=> console.log("DB Connected")).c
 
 
 app.use(cors({
-  origin:process.env.FRONTEND_URL,
-  methods:["GET","POST","DELETE","PUT"],
-  allowedHeaders:["Content-Type","Authorization"],
+  origin: [
+    process.env.FRONTEND_URL,
+    'https://flowstate-omega.vercel.app',
+    'https://flowstate-online.org' // Add any other domains you need
+  ],
+  methods: ["GET", "POST", "DELETE", "PUT", "OPTIONS"], // Add OPTIONS
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true // If you're using cookies/auth headers
 }));
 app.use(morgan("dev"));
 
@@ -47,6 +53,14 @@ app.use((req,res) => {
     message:"404 Not Found (⊙_⊙)？"
   })
 });
+
+//start cron job
+if (job && typeof job.start === 'function') {
+  console.log('Starting cron job...');
+  job.start();
+} else {
+  console.error('Cron job initialization failed!');
+}
 
 app.listen(PORT , () => {
   console.log(`server is running on port ${PORT}`);
