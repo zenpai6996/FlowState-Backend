@@ -17,7 +17,7 @@ mongoose.connect(process.env.MONGO_URI).then(()=> console.log("DB Connected")).c
 
 app.use(cors({
   origin: [
-    'https://flowstate-omega.vercel.app',
+    'http://localhost:5173',
   ],
   methods: ["GET", "POST", "DELETE", "PUT", "OPTIONS"], // Add OPTIONS
   allowedHeaders: ["Content-Type", "Authorization"],
@@ -37,7 +37,7 @@ app.get("/" , async(req,res) => {
 });
 
 //localhost3000/api-v1/...
-app.use("/",routes)
+app.use("/api-v1",routes)
 
 //error middleware
 app.use((err,req,res , next) => {
