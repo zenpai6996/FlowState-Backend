@@ -12,7 +12,6 @@ const app = express();
 
 //db connection
 
-
 mongoose
 	.connect(process.env.MONGO_URI)
 	.then(() => console.log("DB Connected"))
@@ -25,7 +24,7 @@ const allowedOrigins = [
 
 app.use(
 	cors({
-		origin: [process.env.FRONTEND_URL],
+		origin: allowedOrigins,
 		methods: ["GET", "POST", "DELETE", "PUT", "OPTIONS"], // Add OPTIONS
 		allowedHeaders: ["Content-Type", "Authorization"],
 		credentials: true, // If you're using cookies/auth headers
@@ -46,8 +45,7 @@ app.get("/", async (req, res) => {
 
 //localhost3000/api-v1/...
 
-app.use("/",routes)
-
+app.use("/", routes);
 
 //error middleware
 app.use((err, req, res, next) => {
