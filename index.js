@@ -11,6 +11,8 @@ dotenv.config();
 const app = express();
 
 //db connection
+
+
 mongoose
 	.connect(process.env.MONGO_URI)
 	.then(() => console.log("DB Connected"))
@@ -29,6 +31,7 @@ app.use(
 		credentials: true, // If you're using cookies/auth headers
 	})
 );
+
 app.use(morgan("dev"));
 
 app.use(express.json());
@@ -42,7 +45,9 @@ app.get("/", async (req, res) => {
 });
 
 //localhost3000/api-v1/...
-app.use("/api-v1", routes);
+
+app.use("/api-v1",routes)
+
 
 //error middleware
 app.use((err, req, res, next) => {
