@@ -4,6 +4,7 @@ import { validateRequest } from "zod-express-middleware";
 import {
 	createTask,
 	getTaskById,
+	updateTaskDescription,
 	updateTaskTitle,
 } from "../controllers/task.js";
 import { taskSchema } from "../libs/validate-schema.js";
@@ -31,6 +32,15 @@ router.put(
 		body: z.object({ title: z.string() }),
 	}),
 	updateTaskTitle
+);
+router.put(
+	"/:taskId/description",
+	authMiddleware,
+	validateRequest({
+		params: z.object({ taskId: z.string() }),
+		body: z.object({ description: z.string() }),
+	}),
+	updateTaskDescription
 );
 
 router.get(

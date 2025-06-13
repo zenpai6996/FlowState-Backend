@@ -1,3 +1,4 @@
+import { recordActivity } from "../libs/index.js";
 import Project from "../models/project.js";
 import Task from "../models/task.js";
 import Workspace from "../models/workspace.js";
@@ -115,9 +116,70 @@ const updateTaskTitle = async (req, res) => {
 			});
 		}
 
+		const oldTitle = task.title;
+
 		// Actually update the task
 		task.title = title;
 		await task.save();
+
+		//record Activity
+		await recordActivity(req.user._Id, "updated_task", "Task", taskId, {
+			description: `Updated task title from ${oldTitle} to ${title}`,
+		});
+
+		return res.status(200).json({
+			message: "Task title updated successfully",
+			task,
+		});
+	} catch (error) {
+		console.log(error);
+		res.status(500).json({
+			message: "Internal Server Error",
+		});
+	}
+};
+const updateTaskDescription = async (req, res) => {
+	try {
+		const { taskId } = req.params;
+		const { description } = req.body;
+
+		const task = await Task.findById(taskId);
+
+		if (!task) {
+			return res.status(500).json({
+				message: "Task not found",
+			});
+		}
+
+		const project = await Project.findById(task.project);
+		if (!project) {
+			return res.status(500).json({
+				message: "Project not found",
+			});
+		}
+
+		const isMember = project.members.some(
+			(member) => member.user.toString() === req.user._id.toString()
+		);
+
+		if (!isMember) {
+			return res.status(500).json({
+				message: "Not a member of the project",
+			});
+		}
+
+		const oldDescription =
+			task.description.subString(0, 50) +
+			(task.description.length > 50 ? "..." : "");
+
+		// Actually update the task
+		task.description = description;
+		await task.save();
+
+		//record Activity
+		await recordActivity(req.user._Id, "updated_task", "Task", taskId, {
+			description: `Updated task description `,
+		});
 
 		return res.status(200).json({
 			message: "Task title updated successfully",
@@ -131,4 +193,4 @@ const updateTaskTitle = async (req, res) => {
 	}
 };
 
-export { createTask, getTaskById, updateTaskTitle };
+export { createTask, getTaskById, updateTaskDescription, updateTaskTitle };
