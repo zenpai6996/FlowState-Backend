@@ -123,7 +123,7 @@ const updateTaskTitle = async (req, res) => {
 		await task.save();
 
 		//record Activity
-		await recordActivity(req.user._Id, "updated_task", "Task", taskId, {
+		await recordActivity(req.user._id, "updated_task", "Task", taskId, {
 			description: `Updated task title from ${oldTitle} to ${title}`,
 		});
 
@@ -138,10 +138,72 @@ const updateTaskTitle = async (req, res) => {
 		});
 	}
 };
+
 const updateTaskDescription = async (req, res) => {
 	try {
 		const { taskId } = req.params;
 		const { description } = req.body;
+
+		if (!description) {
+			return res.status(400).json({
+				message: "Description is required",
+			});
+		}
+
+		const task = await Task.findById(taskId);
+		if (!task) {
+			return res.status(404).json({
+				message: "Task not found",
+			});
+		}
+
+		const project = await Project.findById(task.project);
+		if (!project) {
+			return res.status(404).json({
+				message: "Project not found",
+			});
+		}
+
+		const isMember = project.members.some(
+			(member) => member.user.toString() === req.user._id.toString()
+		);
+		if (!isMember) {
+			return res.status(403).json({
+				message: "Not a member of the project",
+			});
+		}
+
+		const oldDescription = task.description
+			? task.description.substring(0, 50) +
+			  (task.description.length > 50 ? "..." : "")
+			: "No description";
+
+		task.description = description;
+		await task.save();
+
+		await recordActivity(req.user._id, "updated_task", "Task", taskId, {
+			description: `Updated task description from "${oldDescription}" to "${description.substring(
+				0,
+				50
+			)}${description.length > 50 ? "..." : ""}"`,
+		});
+
+		return res.status(200).json({
+			message: "Task description updated successfully",
+			task,
+		});
+	} catch (error) {
+		console.error("Error updating task description:", error);
+		res.status(500).json({
+			message: "Internal Server Error",
+			error: error.message,
+		});
+	}
+};
+const updateTaskStatus = async (req, res) => {
+	try {
+		const { taskId } = req.params;
+		const { status } = req.body;
 
 		const task = await Task.findById(taskId);
 
@@ -168,17 +230,15 @@ const updateTaskDescription = async (req, res) => {
 			});
 		}
 
-		const oldDescription =
-			task.description.subString(0, 50) +
-			(task.description.length > 50 ? "..." : "");
+		const oldStatus = task.status;
 
 		// Actually update the task
-		task.description = description;
+		task.status = status;
 		await task.save();
 
 		//record Activity
-		await recordActivity(req.user._Id, "updated_task", "Task", taskId, {
-			description: `Updated task description `,
+		await recordActivity(req.user._id, "updated_task", "Task", taskId, {
+			description: `Updated task status from ${oldStatus} to ${status} `,
 		});
 
 		return res.status(200).json({
@@ -193,4 +253,10 @@ const updateTaskDescription = async (req, res) => {
 	}
 };
 
-export { createTask, getTaskById, updateTaskDescription, updateTaskTitle };
+export {
+	createTask,
+	getTaskById,
+	updateTaskDescription,
+	updateTaskStatus,
+	updateTaskTitle,
+};
