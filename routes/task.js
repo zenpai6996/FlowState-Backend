@@ -4,7 +4,9 @@ import { validateRequest } from "zod-express-middleware";
 import {
 	createTask,
 	getTaskById,
+	updateTaskAssignees,
 	updateTaskDescription,
+	updateTaskPriority,
 	updateTaskStatus,
 	updateTaskTitle,
 } from "../controllers/task.js";
@@ -53,6 +55,26 @@ router.put(
 		body: z.object({ status: z.string() }),
 	}),
 	updateTaskStatus
+);
+
+router.put(
+	"/:taskId/priority",
+	authMiddleware,
+	validateRequest({
+		params: z.object({ taskId: z.string() }),
+		body: z.object({ priority: z.string() }),
+	}),
+	updateTaskPriority
+);
+
+router.put(
+	"/:taskId/assignees",
+	authMiddleware,
+	validateRequest({
+		params: z.object({ taskId: z.string() }),
+		body: z.object({ assignees: z.array(z.string()) }),
+	}),
+	updateTaskAssignees
 );
 
 router.get(
