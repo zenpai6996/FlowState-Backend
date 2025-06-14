@@ -5,6 +5,7 @@ import {
 	addSubTask,
 	createTask,
 	deleteSubTask,
+	getActivity,
 	getTaskById,
 	updateSubTask,
 	updateSubTaskTitle,
@@ -138,6 +139,15 @@ router.put(
 		}),
 	}),
 	updateSubTaskTitle
+);
+
+router.get(
+	"/:resourceId/activity",
+	authMiddleware,
+	validateRequest({
+		params: z.object({ resourceId: z.string() }),
+	}),
+	getActivity
 );
 
 export default router;
