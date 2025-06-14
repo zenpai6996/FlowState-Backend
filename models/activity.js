@@ -15,6 +15,8 @@ const activityLogSchema = new Schema(
 				"updated_task",
 				"created_subtask",
 				"updated_subtask",
+				"deleted_subtask",
+				"edited_subtask",
 				"completed_task",
 				"created_project",
 				"updated_project",
