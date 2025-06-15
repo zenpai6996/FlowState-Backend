@@ -37,18 +37,18 @@ router.post(
 );
 
 router.post(
-	"/:projectId/watch",
+	"/:taskId/watch",
 	authMiddleware,
 	validateRequest({
 		params: z.object({
-			yaskId: z.string(),
+			taskId: z.string(),
 		}),
 	}),
 	watchTask
 );
 
 router.post(
-	"/:projectId/archived",
+	"/:taskId/archived",
 	authMiddleware,
 	validateRequest({
 		params: z.object({

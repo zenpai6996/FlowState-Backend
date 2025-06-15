@@ -674,10 +674,8 @@ const addComment = async (req, res) => {
 const watchTask = async (req, res) => {
 	try {
 		const { taskId } = req.params;
-		const { text } = req.body;
 
 		const task = await Task.findById(taskId);
-
 		if (!task) {
 			return res.status(404).json({
 				message: "Task not found",
@@ -686,7 +684,7 @@ const watchTask = async (req, res) => {
 
 		const project = await Project.findById(task.project);
 		if (!project) {
-			return res.status(500).json({
+			return res.status(404).json({
 				message: "Project not found",
 			});
 		}
@@ -694,28 +692,31 @@ const watchTask = async (req, res) => {
 		const isMember = project.members.some(
 			(member) => member.user.toString() === req.user._id.toString()
 		);
-
 		if (!isMember) {
-			return res.status(500).json({
+			return res.status(403).json({
 				message: "Not a member of the project",
 			});
 		}
 
-		const newComment = await Comment.create({
-			text,
-			task: taskId,
-			author: req.user._id,
-		});
+		const isWatching = task.watchers.includes(req.user._id);
 
-		task.comments.push(newComment._id);
+		if (isWatching) {
+			task.watchers = task.watchers.filter(
+				(watcher) => watcher.toString() !== req.user._id.toString()
+			);
+		} else {
+			task.watchers.push(req.user._id);
+		}
+
 		await task.save();
 
-		//record activity
-		await recordActivity(req.user._id, "added_comment", "Task", taskId, {
-			description: `posted a comment`,
+		await recordActivity(req.user._id, "updated_task", "Task", taskId, {
+			description: `${
+				isWatching ? "Stopped watching" : "Started Watching"
+			} task ${task.title}`,
 		});
 
-		res.status(201).json(task);
+		res.status(200).json(task);
 	} catch (error) {
 		console.log(error);
 		res.status(500).json({
@@ -727,7 +728,6 @@ const watchTask = async (req, res) => {
 const archiveTask = async (req, res) => {
 	try {
 		const { taskId } = req.params;
-		const { text } = req.body;
 
 		const task = await Task.findById(taskId);
 
@@ -754,18 +754,16 @@ const archiveTask = async (req, res) => {
 			});
 		}
 
-		const newComment = await Comment.create({
-			text,
-			task: taskId,
-			author: req.user._id,
-		});
+		const IsArchived = task.isArchived;
+		task.isArchived = !IsArchived;
 
-		task.comments.push(newComment._id);
 		await task.save();
 
 		//record activity
-		await recordActivity(req.user._id, "added_comment", "Task", taskId, {
-			description: `posted a comment`,
+		await recordActivity(req.user._id, "updated_comment", "Task", taskId, {
+			description: `${IsArchived ? "Unarchived" : "Archived"} task ${
+				task.title
+			}`,
 		});
 
 		res.status(201).json(task);
@@ -776,7 +774,6 @@ const archiveTask = async (req, res) => {
 		});
 	}
 };
-
 
 export {
 	addComment,
