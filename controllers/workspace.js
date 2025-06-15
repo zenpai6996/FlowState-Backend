@@ -116,22 +116,32 @@ const getWorkspaceStats = async (req, res) => {
 			Project.countDocuments({ workspace: workspaceId }),
 			Project.find({ workspace: workspaceId })
 				.populate(
-					"task",
+					"tasks",
 					"title status dueDate project updatedAt isArchived priority"
 				)
 				.sort({ createdAt: -1 }),
 		]);
 
-		const totalTasks = Project.reduce((acc, project) => {
+		const totalTasks = projects.reduce((acc, project) => {
 			return acc + project.tasks.length;
 		});
 
 		const totalProjectInProgress = projects.filter(
 			(project) => project.status === "In Progress"
-		);
+		).length;
 		const totalProjectCompleted = projects.filter(
 			(project) => project.status === "Completed"
-		);
+		).length;
+		const totalProjectPlanning = projects.filter(
+			(project) => project.status === "Planning"
+		).length;
+		const totalProjectCancelled = projects.filter(
+			(project) => project.status === "Cancelled"
+		).length;
+		const totalProjectOnHold = projects.filter(
+			(project) => project.status === "On Hold"
+		).length;
+
 		const totalTasksCompleted = projects.reduce((acc, project) => {
 			return (
 				acc + project.tasks.filter((task) => task.status === "Done").length
@@ -173,7 +183,7 @@ const getWorkspaceStats = async (req, res) => {
 		//get last 7 days task completion data
 		const last7DaysTask = Array.from({ length: 7 }, (_, i) => {
 			const date = new Date();
-			date.setDate(today.getDate() - i);
+			date.setDate(date.getDate() - i);
 			return date;
 		}).reverse();
 
@@ -182,7 +192,7 @@ const getWorkspaceStats = async (req, res) => {
 			for (const task of project.tasks) {
 				const taskDate = new Date(task.updatedAt);
 
-				const dayInDate = last7Days.findIndex(
+				const dayInDate = last7DaysTask.findIndex(
 					(date) =>
 						date.getDate() === taskDate.getDate() &&
 						date.getMonth() === taskDate.getMonth() &&
@@ -190,7 +200,7 @@ const getWorkspaceStats = async (req, res) => {
 				);
 
 				if (dayInDate !== -1) {
-					const dayName = last7DaysTask[dayInDate].tolocaleDateString("en-us", {
+					const dayName = last7DaysTask[dayInDate].toLocaleDateString("en-us", {
 						weekday: "short",
 					});
 					const dayData = taskTrendsData.find((day) => day.name === dayName);
@@ -277,6 +287,10 @@ const getWorkspaceStats = async (req, res) => {
 			totalTasksCompleted,
 			totalTasksTodo,
 			totalTasksInProgress,
+			totalProjectCompleted,
+			totalProjectPlanning,
+			totalProjectCancelled,
+			totalProjectOnHold,
 		};
 
 		res.status(200).json({
