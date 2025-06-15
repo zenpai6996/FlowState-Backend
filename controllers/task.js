@@ -1,5 +1,6 @@
 import { recordActivity } from "../libs/index.js";
 import ActivityLog from "../models/activity.js";
+import Comment from "../models/comment.js";
 import Project from "../models/project.js";
 import Task from "../models/task.js";
 import Workspace from "../models/workspace.js";
@@ -125,7 +126,7 @@ const updateTaskTitle = async (req, res) => {
 
 		//record Activity
 		await recordActivity(req.user._id, "updated_task", "Task", taskId, {
-			description: `Updated task title from ${oldTitle} to ${title}`,
+			description: `Updated task title `,
 		});
 
 		return res.status(200).json({
@@ -183,10 +184,7 @@ const updateTaskDescription = async (req, res) => {
 		await task.save();
 
 		await recordActivity(req.user._id, "updated_task", "Task", taskId, {
-			description: `Updated task description from "${oldDescription}" to "${description.substring(
-				0,
-				50
-			)}${description.length > 50 ? "..." : ""}"`,
+			description: `Updated task description `,
 		});
 
 		return res.status(200).json({
@@ -346,7 +344,7 @@ const updateTaskAssignees = async (req, res) => {
 
 		//record Activity
 		await recordActivity(req.user._id, "updated_task", "Task", taskId, {
-			description: `Updated task assignee from ${oldAssignees.length} ${assignees.length} `,
+			description: `Updated task assignee `,
 		});
 
 		return res.status(200).json({
@@ -401,7 +399,7 @@ const addSubTask = async (req, res) => {
 
 		//record activity
 		await recordActivity(req.user._id, "created_subtask", "Task", taskId, {
-			description: `created subtask ${title} `,
+			description: `Created a subtask  `,
 		});
 
 		res.status(201).json(task);
@@ -441,7 +439,7 @@ const updateSubTask = async (req, res) => {
 
 		//record activity
 		await recordActivity(req.user._id, "updated_subtask", "Task", taskId, {
-			description: `updated subtask ${subTask.title} `,
+			description: `updated a subtask `,
 		});
 
 		res.status(201).json(task);
@@ -497,7 +495,7 @@ const deleteSubTask = async (req, res) => {
 
 		// Record activity
 		await recordActivity(req.user._id, "deleted_subtask", "Task", taskId, {
-			description: `Deleted subtask: ${deletedSubTask.title}`,
+			description: `deleted a subtask`,
 		});
 
 		res.status(200).json({
@@ -555,7 +553,7 @@ const updateSubTaskTitle = async (req, res) => {
 
 		// Record activity
 		await recordActivity(req.user._id, "edited_subtask", "Task", taskId, {
-			description: `Updated subtask title from "${oldTitle}" to "${title}"`,
+			description: `Updated a subtask title`,
 		});
 
 		res.status(200).json({
@@ -595,11 +593,199 @@ const getActivity = async (req, res) => {
 	}
 };
 
+const getCommentByTaskId = async (req, res) => {
+	try {
+		const { taskId } = req.params;
+
+		const comments = await Comment.find({ task: taskId })
+			.populate("author", "name profilePicture")
+			.sort({
+				createdAt: -1,
+			});
+
+		if (!comments) {
+			return res.status(404).json({
+				message: "Comment not found",
+			});
+		}
+
+		res.status(200).json(comments);
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({
+			message: "Internal server error",
+		});
+	}
+};
+
+const addComment = async (req, res) => {
+	try {
+		const { taskId } = req.params;
+		const { text } = req.body;
+
+		const task = await Task.findById(taskId);
+
+		if (!task) {
+			return res.status(404).json({
+				message: "Task not found",
+			});
+		}
+
+		const project = await Project.findById(task.project);
+		if (!project) {
+			return res.status(500).json({
+				message: "Project not found",
+			});
+		}
+
+		const isMember = project.members.some(
+			(member) => member.user.toString() === req.user._id.toString()
+		);
+
+		if (!isMember) {
+			return res.status(500).json({
+				message: "Not a member of the project",
+			});
+		}
+
+		const newComment = await Comment.create({
+			text,
+			task: taskId,
+			author: req.user._id,
+		});
+
+		task.comments.push(newComment._id);
+		await task.save();
+
+		//record activity
+		await recordActivity(req.user._id, "added_comment", "Task", taskId, {
+			description: `posted a comment`,
+		});
+
+		res.status(201).json(task);
+	} catch (error) {
+		console.log(error);
+		res.status(500).json({
+			message: "Internal Server Error",
+		});
+	}
+};
+
+const watchTask = async (req, res) => {
+	try {
+		const { taskId } = req.params;
+		const { text } = req.body;
+
+		const task = await Task.findById(taskId);
+
+		if (!task) {
+			return res.status(404).json({
+				message: "Task not found",
+			});
+		}
+
+		const project = await Project.findById(task.project);
+		if (!project) {
+			return res.status(500).json({
+				message: "Project not found",
+			});
+		}
+
+		const isMember = project.members.some(
+			(member) => member.user.toString() === req.user._id.toString()
+		);
+
+		if (!isMember) {
+			return res.status(500).json({
+				message: "Not a member of the project",
+			});
+		}
+
+		const newComment = await Comment.create({
+			text,
+			task: taskId,
+			author: req.user._id,
+		});
+
+		task.comments.push(newComment._id);
+		await task.save();
+
+		//record activity
+		await recordActivity(req.user._id, "added_comment", "Task", taskId, {
+			description: `posted a comment`,
+		});
+
+		res.status(201).json(task);
+	} catch (error) {
+		console.log(error);
+		res.status(500).json({
+			message: "Internal Server Error",
+		});
+	}
+};
+
+const archiveTask = async (req, res) => {
+	try {
+		const { taskId } = req.params;
+		const { text } = req.body;
+
+		const task = await Task.findById(taskId);
+
+		if (!task) {
+			return res.status(404).json({
+				message: "Task not found",
+			});
+		}
+
+		const project = await Project.findById(task.project);
+		if (!project) {
+			return res.status(500).json({
+				message: "Project not found",
+			});
+		}
+
+		const isMember = project.members.some(
+			(member) => member.user.toString() === req.user._id.toString()
+		);
+
+		if (!isMember) {
+			return res.status(500).json({
+				message: "Not a member of the project",
+			});
+		}
+
+		const newComment = await Comment.create({
+			text,
+			task: taskId,
+			author: req.user._id,
+		});
+
+		task.comments.push(newComment._id);
+		await task.save();
+
+		//record activity
+		await recordActivity(req.user._id, "added_comment", "Task", taskId, {
+			description: `posted a comment`,
+		});
+
+		res.status(201).json(task);
+	} catch (error) {
+		console.log(error);
+		res.status(500).json({
+			message: "Internal Server Error",
+		});
+	}
+};
+
+
 export {
+	addComment,
 	addSubTask,
+	archiveTask,
 	createTask,
 	deleteSubTask,
 	getActivity,
+	getCommentByTaskId,
 	getTaskById,
 	updateSubTask,
 	updateSubTaskTitle,
@@ -608,4 +794,5 @@ export {
 	updateTaskPriority,
 	updateTaskStatus,
 	updateTaskTitle,
+	watchTask,
 };
