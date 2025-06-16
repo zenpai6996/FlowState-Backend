@@ -760,7 +760,7 @@ const archiveTask = async (req, res) => {
 		await task.save();
 
 		//record activity
-		await recordActivity(req.user._id, "updated_comment", "Task", taskId, {
+		await recordActivity(req.user._id, "archived_task", "Task", taskId, {
 			description: `${IsArchived ? "Unarchived" : "Archived"} task ${
 				task.title
 			}`,
@@ -829,6 +829,23 @@ const deleteTask = async (req, res) => {
 	}
 };
 
+const getmyTasks = async (req, res) => {
+	try {
+		const tasks = await Task.find({ assignees: { $in: [req.user._id] } })
+			.populate("project", "title workspace")
+			.sort({
+				createdAt: -1,
+			});
+
+		res.status(200).json(tasks);
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({
+			message: "Internal server error",
+		});
+	}
+};
+
 export {
 	addComment,
 	addSubTask,
@@ -838,6 +855,7 @@ export {
 	deleteTask,
 	getActivity,
 	getCommentByTaskId,
+	getmyTasks,
 	getTaskById,
 	updateSubTask,
 	updateSubTaskTitle,

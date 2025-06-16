@@ -10,6 +10,7 @@ import {
 	deleteTask,
 	getActivity,
 	getCommentByTaskId,
+	getmyTasks,
 	getTaskById,
 	updateSubTask,
 	updateSubTaskTitle,
@@ -137,6 +138,13 @@ router.put(
 		body: z.object({ assignees: z.array(z.string()) }),
 	}),
 	updateTaskAssignees
+);
+
+router.get(
+	"/my-tasks",
+	authMiddleware,
+
+	getmyTasks
 );
 
 router.get(
