@@ -115,10 +115,11 @@ const getWorkspaceStats = async (req, res) => {
 		const [totalProjects, projects] = await Promise.all([
 			Project.countDocuments({ workspace: workspaceId }),
 			Project.find({ workspace: workspaceId })
-				.populate(
-					"tasks",
-					"title status dueDate project updatedAt isArchived priority"
-				)
+				.populate({
+					path: "tasks",
+					select: "title status dueDate project updatedAt isArchived priority",
+					model: "Task",
+				})
 				.sort({ createdAt: -1 }),
 		]);
 
