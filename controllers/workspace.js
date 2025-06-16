@@ -125,7 +125,7 @@ const getWorkspaceStats = async (req, res) => {
 
 		const totalTasks = projects.reduce((acc, project) => {
 			return acc + project.tasks.length;
-		});
+		}, 0);
 
 		const totalProjectInProgress = projects.filter(
 			(project) => project.status === "In Progress"
@@ -227,7 +227,9 @@ const getWorkspaceStats = async (req, res) => {
 		const projectStatusData = [
 			{ name: "Completed", value: 0, color: "#10b981" },
 			{ name: "In Progress", value: 0, color: "#3b82f6" },
-			{ name: "Planning", value: 0, color: "#f59e0b" },
+			{ name: "Planning", value: 0, color: "#8E44AD" },
+			{ name: "Cancelled", value: 0, color: "#C0392B" },
+			{ name: "On Hold", value: 0, color: "#F39C12" },
 		];
 
 		for (const project of projects) {
@@ -240,6 +242,12 @@ const getWorkspaceStats = async (req, res) => {
 					break;
 				case "Planning":
 					projectStatusData[2].value++;
+					break;
+				case "Cancelled":
+					projectStatusData[3].value++;
+					break;
+				case "On Hold":
+					projectStatusData[4].value++;
 					break;
 			}
 		}
@@ -274,10 +282,18 @@ const getWorkspaceStats = async (req, res) => {
 			const completedTask = projectTask.filter(
 				(task) => task.status === "Done" && task.isArchived === false
 			);
+			const inProgressTask = projectTask.filter(
+				(task) => task.status === "In Progress" && task.isArchived === false
+			);
+			const inToDoTask = projectTask.filter(
+				(task) => task.status === "To Do" && task.isArchived === false
+			);
 			workspaceProductivityData.push({
 				name: project.title,
 				completed: completedTask.length,
-				totla: projectTask.length,
+				total: projectTask.length,
+				inProgress: inProgressTask.length,
+				toDo: inToDoTask.length,
 			});
 		}
 
