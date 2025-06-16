@@ -7,6 +7,7 @@ import {
 	archiveTask,
 	createTask,
 	deleteSubTask,
+	deleteTask,
 	getActivity,
 	getCommentByTaskId,
 	getTaskById,
@@ -149,7 +150,6 @@ router.get(
 	getTaskById
 );
 
-// Add these new routes
 router.delete(
 	"/:taskId/subtasks/:subTaskId",
 	authMiddleware,
@@ -160,6 +160,17 @@ router.delete(
 		}),
 	}),
 	deleteSubTask
+);
+
+router.delete(
+	"/:taskId",
+	authMiddleware,
+	validateRequest({
+		params: z.object({
+			taskId: z.string(),
+		}),
+	}),
+	deleteTask
 );
 
 router.put(

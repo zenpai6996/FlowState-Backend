@@ -775,12 +775,67 @@ const archiveTask = async (req, res) => {
 	}
 };
 
+const deleteTask = async (req, res) => {
+	try {
+		const { taskId } = req.params;
+
+		const task = await Task.findById(taskId);
+		if (!task) {
+			return res.status(404).json({
+				message: "Task not found",
+			});
+		}
+
+		const project = await Project.findById(task.project);
+		if (!project) {
+			return res.status(404).json({
+				message: "Project not found",
+			});
+		}
+
+		// Check if user is an assignee
+		const isAssignee = task.assignees.some(
+			(assignee) => assignee.toString() === req.user._id.toString()
+		);
+
+		if (!isAssignee) {
+			return res.status(403).json({
+				message: "Only task assignees can delete this task",
+			});
+		}
+
+		// Remove task from project
+		project.tasks = project.tasks.filter(
+			(t) => t.toString() !== taskId.toString()
+		);
+		await project.save();
+
+		// Delete the task
+		await Task.findByIdAndDelete(taskId);
+
+		// Record activity
+		await recordActivity(req.user._id, "deleted_task", "Task", taskId, {
+			description: `Deleted task `,
+		});
+
+		res.status(200).json({
+			message: "Task deleted successfully",
+		});
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({
+			message: "Internal Server Error",
+		});
+	}
+};
+
 export {
 	addComment,
 	addSubTask,
 	archiveTask,
 	createTask,
 	deleteSubTask,
+	deleteTask,
 	getActivity,
 	getCommentByTaskId,
 	getTaskById,
