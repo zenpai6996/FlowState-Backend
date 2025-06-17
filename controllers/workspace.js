@@ -1,4 +1,9 @@
+import jwt from "jsonwebtoken";
+import { recordActivity } from "../libs/index.js";
+import { sendEmail } from "../libs/send-email.js";
 import Project from "../models/project.js";
+import User from "../models/user.js";
+import WorkspaceInvite from "../models/workspace-invite.js";
 import Workspace from "../models/workspace.js";
 
 const createWorkspace = async (req, res) => {
@@ -42,9 +47,8 @@ const getWorkspaces = async (req, res) => {
 const getWorkspaceDetails = async (req, res) => {
 	try {
 		const { workspaceId } = req.params;
-		const workspace = await Workspace.findOne({
+		const workspace = await Workspace.findById({
 			_id: workspaceId,
-			"members.user": req.user._id,
 		}).populate("members.user", "name email profilePicture");
 		if (!workspace) {
 			return res.status(404).json({
@@ -327,10 +331,223 @@ const getWorkspaceStats = async (req, res) => {
 	}
 };
 
+const inviteToWorkspace = async (req, res) => {
+	try {
+		const { workspaceId } = req.params;
+		const { email, role } = req.body;
+
+		const workspace = await Workspace.findById(workspaceId);
+
+		if (!workspace) {
+			return res.status(404).json({
+				message: "Workspace not found",
+			});
+		}
+
+		const userMemberInfo = workspace.members.find(
+			(member) => member.user.toString() === req.user._id.toString()
+		);
+
+		if (!userMemberInfo || !["admin", "owner"].includes(userMemberInfo.role)) {
+			return res.status(403).json({
+				message: "You are not authorized to invite members to this workspace",
+			});
+		}
+
+		const existingUser = await User.findOne({ email });
+
+		if (!existingUser) {
+			res.status(400).json({
+				message: "User not found",
+			});
+		}
+
+		const isMember = workspace.members.some(
+			(member) => member.user.toString() === existingUser._id.toString()
+		);
+
+		if (isMember) {
+			return res.status(400).json({ message: "User is already a member" });
+		}
+
+		const isInvited = await WorkspaceInvite.findOne({
+			user: existingUser._id,
+			workspaceId: workspaceId,
+		});
+
+		if (isInvited && isInvited.expiresAt > new Date()) {
+			res.status(400).json({
+				message: "User already invited to this workpsace",
+			});
+		}
+
+		if (isInvited && isInvited.expiresAt < new Date()) {
+			await WorkspaceInvite.deleteOne({ _id: isInvited._id });
+		}
+
+		const inviteToken = jwt.sign(
+			{
+				user: existingUser._id,
+				workspaceId: workspaceId,
+				role: role || "member",
+			},
+			process.env.JWT_SECRET,
+			{ expiresIn: "3d" }
+		);
+
+		await WorkspaceInvite.create({
+			user: existingUser._id,
+			workspaceId: workspaceId,
+			token: inviteToken,
+			role: role || "member",
+			expiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+		});
+
+		const invitationLink = `${process.env.FRONTEND_URL}/workspace-invite/${workspace._id}/?tk=${inviteToken}`;
+
+		const emailContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2>Reporting from FlowState!</h2>
+      <p>Hello User, （。＾▽＾）</p>
+      <p>You have been invited to join <span style="color: #d97706">${workspace.name}</span> </p>
+      <p> You can join by clicking the button below:</p>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${invitationLink}" 
+           style="background-color: #d97706; color: white; padding: 12px 30px; 
+                  text-decoration: none; border-radius: 5px; display: inline-block;">
+          Join ${workspace.name}
+        </a>
+      </div>
+      <p><strong>This link will expire in 3 days.</strong></p>
+      <p>If you didn't create an account with us, please ignore this email.</p>
+    </div>
+  `;
+
+		await sendEmail(
+			email,
+			"You have been invited to join a workspace!!",
+			emailContent
+		);
+		res.status(200).json({
+			message: "Invite sent Succesfully!",
+		});
+	} catch (error) {
+		console.log(error);
+		res.status(500).json({ message: "Internal Server Error" });
+	}
+};
+
+const acceptGeneralInvite = async (req, res) => {
+	try {
+		const { workspaceId } = req.params;
+
+		const workspace = await WorkspaceInvite.findById(workspaceId);
+
+		if (!workspace) {
+			return res.status(404).json({
+				message: "Workspace not found",
+			});
+		}
+
+		const isMember = workspace.members.some(
+			(member) => member.user.toString() === req.user._id.toString()
+		);
+
+		if (isMember) {
+			return res.status(400).json({ message: "User is already a member" });
+		}
+
+		workspace.members.push({
+			user: req.user._id,
+			role: "member",
+			joinedAt: new Date(),
+		});
+
+		await workspace.save();
+
+		await recordActivity(req.user._id, "joined_workspace", workspaceId, {
+			description: `joined ${workspace.name} workspace`,
+		});
+
+		res.status(200).json({
+			message: "Invitation sent successfully!",
+		});
+	} catch (error) {
+		console.log(error);
+		res.status(500).json({ message: "Internal Server Error" });
+	}
+};
+
+const acceptInviteToken = async (req, res) => {
+	const { token } = req.body;
+	const decoded = jwt.verify(token, process.env.JWT_SECRET);
+	const { user, workspaceId, role } = decoded;
+	const workspace = await Workspace.findById(workspaceId);
+
+	if (!workspace) {
+		return res.status(404).json({
+			message: "Workspace not found",
+		});
+	}
+
+	const isMember = workspace.members.some(
+		(member) => member.user.toString() === user.toString()
+	);
+
+	if (isMember) {
+		return res.status(400).json({ message: "User is already a member" });
+	}
+
+	const inviteInfo = await WorkspaceInvite.findOne({
+		user: user,
+		workspaceId: workspaceId,
+	});
+
+	if (!inviteInfo) {
+		return res.status(404).json({
+			message: "Invitation not found",
+		});
+	}
+
+	if (inviteInfo.expiresAt < new Date()) {
+		return res.status(400).json({
+			message: "Invitation has expired",
+		});
+	}
+
+	workspace.members.push({
+		user: user,
+		role: role || "member",
+		joinedAt: new Date(),
+	});
+
+	await workspace.save();
+
+	await Promise.all([
+		WorkspaceInvite.deleteOne({ _id: inviteInfo._id }),
+		recordActivity(user, "joined_workspace", workspaceId, {
+			description: `joined ${workspace.name} workpsace`,
+		}),
+	]);
+
+	res.status(200).json({
+		message: "Invitation sent successfully!",
+	});
+
+	try {
+	} catch (error) {
+		console.log(error);
+		res.status(500).json({ message: "Internal Server Error" });
+	}
+};
+
 export {
+	acceptGeneralInvite,
+	acceptInviteToken,
 	createWorkspace,
 	getWorkspaceDetails,
 	getWorkspaceProjects,
 	getWorkspaces,
 	getWorkspaceStats,
+	inviteToWorkspace,
 };
