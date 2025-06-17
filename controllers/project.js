@@ -94,10 +94,14 @@ const getProjectTasks = async (req, res) => {
 				message: "Project not found",
 			});
 		}
-
-		const isMember = project.members.some(
-			(member) => member.user._id.toString() === req.user._id.toString()
-		);
+		const workspace = await Workspace.findById(project.workspace);
+		const isMember =
+			project.members.some(
+				(member) => member.user.toString() === req.user._id.toString()
+			) ||
+			workspace.members.some(
+				(member) => member.user.toString() === req.user._id.toString()
+			);
 
 		if (!isMember) {
 			return res.status(403).json({
