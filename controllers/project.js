@@ -94,16 +94,20 @@ const getProjectTasks = async (req, res) => {
 				message: "Project not found",
 			});
 		}
-		const workspace = await Workspace.findById(project.workspace);
-		const isMember =
-			project.members.some(
-				(member) => member.user.toString() === req.user._id.toString()
-			) ||
-			workspace.members.some(
-				(member) => member.user.toString() === req.user._id.toString()
-			);
-
-		if (!isMember) {
+		const workspace = await Workspace.findById(project.workspace).populate(
+			"members.user",
+			"name profilePicture"
+		);
+		const allMembers = [
+			...project.members,
+			...workspace.members.filter(
+				(wm) =>
+					!project.members.some(
+						(m) => m.user._id.toString() === wm.user._id.toString()
+					)
+			),
+		];
+		if (!allMembers) {
 			return res.status(403).json({
 				message: "You are not a member of this project",
 			});
@@ -117,7 +121,10 @@ const getProjectTasks = async (req, res) => {
 			.sort({ createdAt: -1 });
 
 		return res.status(200).json({
-			project,
+			project: {
+				...project.toObject(),
+				allMembers,
+			},
 			tasks,
 		});
 	} catch (error) {
