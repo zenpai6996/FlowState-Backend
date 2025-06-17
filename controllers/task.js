@@ -798,6 +798,16 @@ const archiveTask = async (req, res) => {
 			});
 		}
 
+		const isAssignee = task.assignees.some(
+			(assignee) => assignee.toString() === req.user._id.toString()
+		);
+
+		if (!isAssignee) {
+			return res.status(403).json({
+				message: "Only task assignees can delete this task",
+			});
+		}
+
 		const IsArchived = task.isArchived;
 		task.isArchived = !IsArchived;
 

@@ -19,9 +19,7 @@ const taskSchema = new Schema(
 			enum: ["Low", "Medium", "High"],
 			default: "Low",
 		},
-		assignees: [
-			{ type: Schema.Types.ObjectId, ref: "User" || "WorkspaceInvite" },
-		],
+		assignees: [{ type: Schema.Types.ObjectId, ref: "User" }],
 		watchers: [{ type: Schema.Types.ObjectId, ref: "User" }],
 		isWatched: { type: Boolean, default: false },
 		dueDate: { type: Date },
