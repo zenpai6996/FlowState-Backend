@@ -24,7 +24,7 @@ const allowedOrigins = [
 
 app.use(
 	cors({
-		origin: "https://flowstate-omega.vercel.app",
+		origin: "http://localhost:5173",
 		methods: ["GET", "POST", "DELETE", "PUT", "OPTIONS"], // Add OPTIONS
 		allowedHeaders: ["Content-Type", "Authorization"],
 		credentials: true, // If you're using cookies/auth headers
@@ -45,7 +45,8 @@ app.get("/", async (req, res) => {
 
 //localhost3000/api-v1/...
 
-app.use("/", routes);
+app.use("/api-v1", routes);
+app.use("/profile-pictures", express.static("uploads/profile-pictures"));
 
 //error middleware
 app.use((err, req, res, next) => {

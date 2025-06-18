@@ -5,6 +5,8 @@ import {
 	changePassword,
 	getUserProfile,
 	updateUserProfile,
+	upload,
+	uploadProfilePicture,
 } from "../controllers/user.js";
 import { authMiddleware } from "../middleware/auth-middleware.js";
 const router = express.Router();
@@ -34,6 +36,13 @@ router.put(
 		}),
 	}),
 	changePassword
+);
+
+router.post(
+	"/upload-profile-picture",
+	authMiddleware,
+	upload,
+	uploadProfilePicture
 );
 
 export default router;
