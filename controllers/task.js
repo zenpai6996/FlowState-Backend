@@ -112,14 +112,9 @@ const updateTaskTitle = async (req, res) => {
 			});
 		}
 
-		const workspace = await Workspace.findById(project.workspace);
-		const isMember =
-			project.members.some(
-				(member) => member.user.toString() === req.user._id.toString()
-			) ||
-			workspace.members.some(
-				(member) => member.user.toString() === req.user._id.toString()
-			);
+		const isMember = project.members.some(
+			(member) => member.user.toString() === req.user._id.toString()
+		);
 
 		if (!isMember) {
 			return res.status(500).json({
@@ -174,15 +169,9 @@ const updateTaskDescription = async (req, res) => {
 				message: "Project not found",
 			});
 		}
-		const workspace = await Workspace.findById(project.workspace);
-
-		const isMember =
-			project.members.some(
-				(member) => member.user.toString() === req.user._id.toString()
-			) ||
-			workspace.members.some(
-				(member) => member.user.toString() === req.user._id.toString()
-			);
+		const isMember = project.members.some(
+			(member) => member.user.toString() === req.user._id.toString()
+		);
 
 		if (!isMember) {
 			return res.status(403).json({
@@ -234,15 +223,9 @@ const updateTaskStatus = async (req, res) => {
 				message: "Project not found",
 			});
 		}
-		const workspace = await Workspace.findById(project.workspace);
-
-		const isMember =
-			project.members.some(
-				(member) => member.user.toString() === req.user._id.toString()
-			) ||
-			workspace.members.some(
-				(member) => member.user.toString() === req.user._id.toString()
-			);
+		const isMember = project.members.some(
+			(member) => member.user.toString() === req.user._id.toString()
+		);
 
 		if (!isMember) {
 			return res.status(500).json({
@@ -292,15 +275,9 @@ const updateTaskPriority = async (req, res) => {
 				message: "Project not found",
 			});
 		}
-		const workspace = await Workspace.findById(project.workspace);
-
-		const isMember =
-			project.members.some(
-				(member) => member.user.toString() === req.user._id.toString()
-			) ||
-			workspace.members.some(
-				(member) => member.user.toString() === req.user._id.toString()
-			);
+		const isMember = project.members.some(
+			(member) => member.user.toString() === req.user._id.toString()
+		);
 
 		if (!isMember) {
 			return res.status(500).json({
@@ -404,15 +381,9 @@ const addSubTask = async (req, res) => {
 			});
 		}
 
-		const workspace = await Workspace.findById(project.workspace);
-
-		const isMember =
-			project.members.some(
-				(member) => member.user.toString() === req.user._id.toString()
-			) ||
-			workspace.members.some(
-				(member) => member.user.toString() === req.user._id.toString()
-			);
+		const isMember = project.members.some(
+			(member) => member.user.toString() === req.user._id.toString()
+		);
 
 		if (!isMember) {
 			return res.status(500).json({
@@ -669,15 +640,9 @@ const addComment = async (req, res) => {
 			});
 		}
 
-		const workspace = await Workspace.findById(project.workspace);
-
-		const isMember =
-			project.members.some(
-				(member) => member.user.toString() === req.user._id.toString()
-			) ||
-			workspace.members.some(
-				(member) => member.user.toString() === req.user._id.toString()
-			);
+		const isMember = project.members.some(
+			(member) => member.user.toString() === req.user._id.toString()
+		);
 
 		if (!isMember) {
 			return res.status(500).json({
