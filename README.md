@@ -93,38 +93,33 @@
 
 ```
 FlowState-Backend/
-├── src/
-│   ├── controllers/        # Request handlers
-│   │   ├── auth.controller.ts
-│   │   ├── project.controller.ts
-│   │   ├── task.controller.ts
-│   │   └── user.controller.ts
-│   ├── middlewares/        # Custom middleware
-│   │   ├── auth.middleware.ts
-│   │   └── validation.middleware.ts
-│   ├── models/            # Database models
-│   │   ├── User.model.ts
-│   │   ├── Project.model.ts
-│   │   └── Task.model.ts
-│   ├── routes/            # API routes
-│   │   ├── auth.routes.ts
-│   │   ├── projects.routes.ts
-│   │   └── tasks.routes.ts
-│   ├── services/          # Business logic
-│   │   ├── auth.service.ts
-│   │   ├── email.service.ts
-│   │   └── upload.service.ts
-│   ├── utils/             # Utility functions
-│   │   ├── validators.ts
-│   │   ├── helpers.ts
-│   │   └── constants.ts
-│   ├── config/            # Configuration
-│   │   ├── database.ts
-│   │   ├── jwt.ts
-│   │   └── environment.ts
-│   └── types/             # TypeScript definitions
-├── docs/                  # API documentation
-└── scripts/               # Utility scripts
+├── controllers/           # Request handlers
+│   ├── auth.controller.js
+│   ├── project.controller.js
+│   ├── task.controller.js
+│   └── user.controller.js
+├── libs/                  # Library files
+├── middleware/            # Custom middleware (singular, not plural)
+│   ├── auth.middleware.js
+│   └── validation.middleware.js
+├── models/               # Database models
+│   ├── User.model.js
+│   ├── Project.model.js
+│   └── Task.model.js
+├── node_modules/         # Dependencies
+├── routes/               # API routes
+│   ├── auth.routes.js
+│   ├── projects.routes.js
+│   └── tasks.routes.js
+├── uploads/              # File uploads directory
+├── .env                  # Environment variables
+├── .gitignore           # Git ignore file
+├── banner.svg           # Project banner
+├── index.js             # Main entry point
+├── LICENSE              # License file
+├── package-lock.json    # Lock file
+├── package.json         # Package configuration
+└── README.md            # Documentation
 ```
 
 ---
