@@ -35,7 +35,7 @@ export const uploadProfilePicture = async (req, res) => {
 	const user = await User.findById(req.user._id);
 	if (!user) return res.status(404).json({ message: "User not found" });
 
-	user.profilePicture = `https://flowstate-backend.onrender.com/profile-pictures/${req.file.filename}`;
+	user.profilePicture = ` https://backend-icy-frost-8085.fly.dev/profile-pictures/${req.file.filename}`;
 	await user.save();
 
 	res.status(200).json({
