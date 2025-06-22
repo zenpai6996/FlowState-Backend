@@ -3,7 +3,6 @@ import dotenv from "dotenv";
 import express from "express";
 import mongoose from "mongoose";
 import morgan from "morgan";
-import { job } from "./libs/cron.js";
 import routes from "./routes/index.js";
 
 dotenv.config();
@@ -61,13 +60,6 @@ app.use((req, res) => {
 	});
 });
 
-//start cron job
-if (job && typeof job.start === "function") {
-	console.log("Starting cron job...");
-	job.start();
-} else {
-	console.error("Cron job initialization failed!");
-}
 app.listen(process.env.PORT || 5000, "0.0.0.0", () => {
 	console.log(`server is running on port ${process.env.PORT || 5000}`);
 });
